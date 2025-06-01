@@ -1,15 +1,8 @@
-%% Steps that I need to do to implement my problem
-% 1 - Create data from an ODE
-% 2 - Form the feasibility matrices that is 2\partial \phiWyy^T - \Sigma
-% u_i,k\Phi_{i,k}^T = 0...
-% 3 - Create the inequality in (x,y) and solve it as a system of polynomial
-% inequalities
-% The above problem cannot be formulated as a 
 clearvars -global
 clear all; close all
 clc
 rng('default')
-%% Step 1 - generate data from an ODE which is defined in sys_poly function
+%% Generate data from an ODE which is defined in sys_poly function
 global x_glo
 global t_prev
 global interval
@@ -40,10 +33,10 @@ eps = max([eps_1;eps_2;eps_3])/15;
 for i = 1:data_points
     x_glo(i,2+dimensions:end) = x_glo(i,2+dimensions:end) + eps*(2*rand(1,dimensions)-1);
 end
-%% build A,B,xi
+%% Build A,B,xi
 T = data_points;      % of sample for design, increase if noise large
 [phi_data,x_dot,data_fit] = data_matrix(T,eps,dimensions);
-%% clear yalmip
+%% Clear yalmip
 yalmip('clear')
 %% find contraction metric in data driven way
 tic
@@ -51,18 +44,15 @@ degree = 1;    %% this is the variable used to indicate the maximum degree of th
 degree_rho = 3;
 [x,y,mu,rho_1,Q,W,c,rho_Y] = ddc_poly(phi_data,T,data_fit,degree,degree_rho,G);
 toc
-%% verify contraction metric in oringal model
+%% Verify contraction metric in oringal model
 verify_contraction_metric(x,y,rho_2,M,G,sigma,0)
 %% Create trajectories under the contraction feedback controller found
 Z = [];
 colors = lines(10);
 for i = 1:5
     tspan = 0:0.1:5;
-    % initial = 10*rand(3,1);
-    % initial = [cos(pi*rand(1,1))*10*rand(1,1);cos(pi*rand(1,1))*10*rand(1,1);cos(pi*rand(1,1))*10*rand(1,1)];
-    initial = [-9 + 4*(i-1);-9 + 4*(i-1);-9 + 4*(i-1)];
-    [t,Z(i,:,:,:)] = ode15s(@(t,z) sys_poly(t,z,eps,1,data_points,dimensions,x,rho_1,G,Q), tspan, initial);
-    'here'
+    initial = [-9 + 3.5*(i-1);-9 + 3.5*(i-1);-9 + 3.5*(i-1)];
+    [t,Z(i,:,:,:)] = ode15s(@(t,z) sys_poly(t,z,eps,1,data_points,dimensions,x,rho_1,G,Q,W), tspan, initial);
 end
 %% evaluate the feedback control action to show all trajectories are contracting
 set(groot, ['Default', 'Line', 'LineWidth'], 2);
@@ -78,7 +68,7 @@ for i = 1:5
     end
     hold on;
 end
-% saveas(gcf,'XCoordinatePlot-NonlinearNonAutonomous-3D-W-Rho','jpg')
+saveas(gcf,'Fig1','jpg')
 hold off
 figure();
 for i = 1:5
@@ -90,7 +80,7 @@ for i = 1:5
     end
     hold on;
 end
-% saveas(gcf,'YCoordinatePlot-NonlinearNonAutonomous-3D-W-Rho','jpg')
+saveas(gcf,'Fig2','jpg')
 hold off
 figure();
 for i = 1:5
@@ -102,7 +92,7 @@ for i = 1:5
     end
     hold on;
 end
-% saveas(gcf,'ZCoordinatePlot-NonLinearNonAutonomous-3D-W-Rho','jpg')
+saveas(gcf,'Fig3','jpg')
 hold off;
 figure();
 for i = 1:5
@@ -115,15 +105,16 @@ for i = 1:5
     end
     hold on;
 end
-% saveas(gcf,'3DTrajectoriesPlot-NonlinearNonAutonomous-W-Rho','jpg')
+saveas(gcf,'Fig4','jpg')
 hold off;
 %% Compute distance of trajectories
  l = [];
+ energy = [];
  for i = 1:5
      for j=1:51
-         l(i,j) = compute_distance(Q,x,squeeze(Z(i,j,:)),j);
+         [l(i,j),energy(i,j)] = compute_distance(Q,x,squeeze(Z(i,j,:)),j,W,50);
+         j
      end
-     'here'
  end
  %% Plot distance
  t_span = 0:0.1:5;
@@ -131,57 +122,13 @@ hold off;
      semilogy(t_span,l(i,:),'-*', 'Color',colors(i,:));
      if i == 1
          xlabel('Time');
-         ylabel('~log(d(x(t),0)');
+         ylabel('~d(x(t),0)');
          xlim([0,5]);
      end
      hold on;
  end
  hold off;
- saveas(gcf,'ApproxDistEven-W-Rho','jpg')
-%% Plot Many Different Solutions to our ODE
-Z = [];
-colors = lines(10);
-figure;
-hold on;
-for i=1:10
-    i
-    tspan = 0:1:10;
-    initial = 4*rand(2,1);
-    eps = 0;             % no noise
-    [t,Z(i,:,:)] = ode15s(@(t,x) sys_poly(t,x,eps,0,100), tspan, initial);
-    Z(i,:,:)
-    plot(Z(i,:,1), Z(i,:,2), '-o', 'Color',colors(i,:));
-    % plotpp(odefun,'tspan',10,'quivercolor', [0.6,0.6,0.6],'xlim',[-50,50],'ylim',[-50,50]);
-end
-xlabel('X_1');
-ylabel('X_2');
-saveas(gcf,'TrajectoriesPlot-NonLinearNonAutonomous-Unstable','jpg')
-grid on;
-hold off;
-figure();
-for i = 1:10
-    plot(t,Z(i,:,2),'-*', 'Color',colors(i,:));
-    if i == 1
-        xlabel('Time');
-        ylabel('X_2');
-        xlim([0,10]);
-    end
-    hold on;
-end
-saveas(gcf,'YCoordinatePlot-NonLinearNonAutonomous-Unstable','jpg')
-hold off;
-figure();
-for i = 1:10
-    plot(t,Z(i,:,1),'-*', 'Color',colors(i,:));
-    if i == 1
-        xlabel('Time');
-        ylabel('X_1');
-        xlim([0,10]);
-    end
-    hold on;
-end
-saveas(gcf,'XCoordinatePlot-NonLinearNonAutonomous-Unstable','jpg')
-hold off;
+ saveas(gcf,'Fig5','jpg')
 %% find contraction metric in model based way
 degree = 1;
 [M,C,x,y,rho_2] =  find_contraction_metric(degree,G);

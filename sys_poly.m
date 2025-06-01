@@ -1,4 +1,4 @@
-function dxdt = sys_poly(t,x,eps,feedback,data_points,dimensions,vars,rho_1,G,Q)
+function dxdt = sys_poly(t,x,eps,feedback,data_points,dimensions,vars,rho_1,G,Q,W)
 global x_glo
 global index
 global update
@@ -7,7 +7,9 @@ global interval
 global trajectories
 if feedback == 1
     t
-    u = compute_feedback(rho_1,Q,vars,[x(1);x(2);x(3)],G);
+    N = 100;
+    [X_opt,~] = compute_geodesic_casadi([0;0;0],x,W,N);
+    u = compute_feedback_using_geodesic(X_opt,N,rho_1,Q,G,vars);
     dxdt = [-x(1) + x(3); x(1)^2 - x(2) - 2*x(1)*x(3) + x(3); -x(2)] +  G*u;
 else
     dxdt = [-x(1) + x(3); x(1)^2 - x(2) - 2*x(1)*x(3) + x(3); -x(2)];
