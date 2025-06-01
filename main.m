@@ -112,7 +112,7 @@ hold off;
  energy = [];
  for i = 1:5
      for j=1:51
-         [l(i,j),energy(i,j)] = compute_distance(Q,x,squeeze(Z(i,j,:)),j,W,50);
+         [l(i,j),energy(i,j)] = compute_distance(Q,x,squeeze(Z(i,j,:)),j,W,100);
          j
      end
  end
@@ -121,7 +121,7 @@ hold off;
  for i = 1:5
      semilogy(t_span,l(i,:),'-*', 'Color',colors(i,:));
      if i == 1
-         xlabel('Time');
+         xlabel('t (seconds)');
          ylabel('~d(x(t),0)');
          xlim([0,5]);
      end
