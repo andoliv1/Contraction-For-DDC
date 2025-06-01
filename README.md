@@ -1,4 +1,4 @@
-# Contraction-FOR-DDC
+# Contraction-For-DDC
 
 Attached is a set of functions to implemenent closed loop contraction in a data-driven manner.
 
